@@ -1,0 +1,25 @@
+{
+  "name": "crypto-player",
+  "version": "1.0.0",
+  "description": "A cross-platform encrypted video player",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^22.0.0",
+    "electron-builder": "^23.6.0"
+  },
+  "build": {
+    "appId": "com.xuebusi.crypto-player",
+    "productName": "Encrypted Video Player",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules"
+    ]
+  }
+}

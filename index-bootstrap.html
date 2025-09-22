@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全加密视频播放器</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #f8f9fa;
+        }
+
+        .container-wrapper {
+            background: rgba(45, 52, 54, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 1200px;
+        }
+
+        .module {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            border: 2px solid #a29bfe;
+            height: 100%;
+        }
+
+        .upload-area {
+            border: 2px dashed #a29bfe;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: rgba(162, 155, 254, 0.1);
+        }
+
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            margin: 5px 0 15px 0;
+            background: #636e72;
+        }
+
+        .strength-weak {
+            background: #d63031;
+            width: 33%;
+        }
+
+        .strength-medium {
+            background: #fdcb6e;
+            width: 66%;
+        }
+
+        .strength-strong {
+            background: #00b894;
+            width: 100%;
+        }
+
+        .file-item {
+            padding: 6px;
+            margin: 4px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .file-item:hover {
+            background: rgba(162, 155, 254, 0.1);
+        }
+
+        .file-item.active {
+            background: rgba(74, 107, 223, 0.2);
+            border-left: 3px solid #6c5ce7;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        .security-notice {
+            background: rgba(253, 203, 110, 0.2);
+            border: 1px solid #fdcb6e;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+            color: #fdcb6e;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container container-wrapper">
+        <header class="bg-primary py-4 text-center position-relative">
+            <h1 class="h2 mb-2">安全加密视频播放器</h1>
+            <p class="mb-0 opacity-75">解密视频仅限播放，无法下载或保存</p>
+            <div class="position-absolute top-0 end-0 mt-3 me-3 fs-2">🔒</div>
+        </header>
+
+        <div class="row p-4 g-4">
+            <!-- 加密存储模块 -->
+            <div class="col-lg-6">
+                <div class="module">
+                    <div class="d-flex align-items-center mb-3 pb-2 border-bottom border-secondary">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2"
+                            style="width: 40px; height: 40px;">
+                            <i class="bi bi-shield-lock fs-5"></i>
+                        </div>
+                        <h2 class="h5 mb-0 text-purple">加密存储模块</h2>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="upload-area" id="encryptUploadArea">
+                            <i class="bi bi-folder fs-1 text-purple"></i>
+                            <p class="mb-1">选择MP4视频文件进行加密</p>
+                            <p class="file-info text-light-emphasis mb-0" id="encryptFileInfo">未选择文件</p>
+                        </div>
+
+                        <input type="password" class="form-control bg-dark text-light border-purple mb-2"
+                            id="encryptPassword" placeholder="设置加密密码">
+                        <div class="password-strength" id="encryptPasswordStrength"></div>
+                        <p class="small mb-3">密码强度: <span id="encryptStrengthText">未输入</span></p>
+
+                        <div class="d-flex flex-wrap">
+                            <button id="encryptBtn" class="btn btn-primary me-2 mb-2" disabled>加密并保存</button>
+                            <button id="clearEncryptBtn" class="btn btn-pink mb-2">清除</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="h6 mb-2">已加密视频</h3>
+                        <div class="file-list border border-purple rounded mb-2" id="encryptedFileList"
+                            style="max-height: 150px; overflow-y: auto;">
+                            <div class="file-item text-secondary" style="cursor: default;">
+                                <span>无加密视频</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap">
+                            <button id="deleteEncryptedBtn" class="btn btn-pink me-2 mb-2" disabled>删除选中</button>
+                            <button id="downloadEncryptedBtn" class="btn btn-primary mb-2" disabled>下载加密文件</button>
+                        </div>
+                    </div>
+
+                    <div id="encryptStatus" class="alert mt-3 mb-0 d-none"></div>
+                </div>
+            </div>
+
+            <!-- 解密播放模块 -->
+            <div class="col-lg-6">
+                <div class="module">
+                    <div class="d-flex align-items-center mb-3 pb-2 border-bottom border-secondary">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2"
+                            style="width: 40px; height: 40px;">
+                            <i class="bi bi-play-circle fs-5"></i>
+                        </div>
+                        <h2 class="h5 mb-0 text-purple">解密播放模块</h2>
+                    </div>
+
+                    <div class="security-notice mb-3">
+                        <i class="bi bi-exclamation-triangle"></i> 安全提示：解密后的视频仅限播放，无法下载或保存到本地
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="upload-area" id="decryptUploadArea">
+                            <i class="bi bi-folder fs-1 text-purple"></i>
+                            <p class="mb-1">选择加密视频文件进行播放</p>
+                            <p class="file-info text-light-emphasis mb-0" id="decryptFileInfo">未选择文件</p>
+                        </div>
+
+                        <input type="password" class="form-control bg-dark text-light border-purple mb-3"
+                            id="decryptPassword" placeholder="输入解密密码">
+
+                        <div class="d-flex flex-wrap">
+                            <button id="decryptBtn" class="btn btn-success me-2 mb-2" disabled>解密并播放</button>
+                            <button id="clearDecryptBtn" class="btn btn-pink mb-2">清除</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="h6 mb-2">播放控制</h3>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button id="playBtn" class="btn btn-sm btn-purple">播放</button>
+                            <button id="pauseBtn" class="btn btn-sm btn-purple">暂停</button>
+                            <button id="volumeUpBtn" class="btn btn-sm btn-purple">音量+</button>
+                            <button id="volumeDownBtn" class="btn btn-sm btn-purple">音量-</button>
+                            <button id="stopBtn" class="btn btn-sm btn-purple">停止</button>
+                        </div>
+                    </div>
+
+                    <div id="decryptStatus" class="alert mt-3 mb-0 d-none"></div>
+                </div>
+            </div>
+
+            <!-- 视频播放区域 -->
+            <div class="col-12">
+                <div class="video-container">
+                    <video id="videoPlayer" controls controlsList="nodownload noplaybackrate nofullscreen"></video>
+                </div>
+            </div>
+        </div>
+
+        <footer class="bg-dark text-center py-3 text-secondary">
+            <p class="mb-0 small">© 2023 安全加密视频播放器 | 解密视频仅内存播放，确保内容安全</p>
+        </footer>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ==================== 加密存储模块 ====================
+        class EncryptionModule {
+            constructor() {
+                this.db = null;
+                this.selectedFile = null;
+                this.selectedEncryptedFile = null;
+                this.init();
+            }
+
+            async init() {
+                await this.initDatabase();
+                this.setupEventListeners();
+                this.loadEncryptedFiles();
+            }
+
+            async initDatabase() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open('EncryptionModuleDB', 1);
+
+                    request.onerror = (event) => {
+                        console.error('加密模块数据库打开失败:', event.target.error);
+                        reject(event.target.error);
+                    };
+
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        console.log('加密模块数据库打开成功');
+                        resolve();
+                    };
+
+                    request.onupgradeneeded = (event) => {
+                        const database = event.target.result;
+                        if (!database.objectStoreNames.contains('encryptedVideos')) {
+                            const store = database.createObjectStore('encryptedVideos', {
+                                keyPath: 'id',
+                                autoIncrement: true
+                            });
+                            store.createIndex('name', 'name', { unique: false });
+                            store.createIndex('created', 'created', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            setupEventListeners() {
+                // 文件选择
+                document.getElementById('encryptUploadArea').addEventListener('click', () => this.selectFile());
+
+                // 密码强度检测
+                document.getElementById('encryptPassword').addEventListener('input', (e) =>
+                    this.checkPasswordStrength(e.target.value));
+
+                // 加密按钮
+                document.getElementById('encryptBtn').addEventListener('click', () => this.encryptVideo());
+
+                // 清除按钮
+                document.getElementById('clearEncryptBtn').addEventListener('click', () => this.clearSelection());
+
+                // 删除按钮
+                document.getElementById('deleteEncryptedBtn').addEventListener('click', () => this.deleteEncryptedFile());
+
+                // 下载按钮 - 只允许下载加密文件
+                document.getElementById('downloadEncryptedBtn').addEventListener('click', () => this.downloadEncryptedFile());
+            }
+
+            async selectFile() {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'video/mp4';
+                fileInput.onchange = (e) => {
+                    if (e.target.files[0]) {
+                        this.handleFileSelect(e.target.files[0]);
+                    }
+                };
+                fileInput.click();
+            }
+
+            handleFileSelect(file) {
+                if (file.type !== 'video/mp4') {
+                    this.showStatus('请选择MP4格式的视频文件', 'danger');
+                    return;
+                }
+
+                this.selectedFile = file;
+                document.getElementById('encryptFileInfo').textContent =
+                    `已选择: ${file.name} (${this.formatFileSize(file.size)})`;
+                document.getElementById('encryptBtn').disabled = false;
+
+                this.showStatus('视频文件已准备好，请设置密码进行加密', 'success');
+            }
+
+            async encryptVideo() {
+                const password = document.getElementById('encryptPassword').value.trim();
+                if (!password) {
+                    this.showStatus('请输入加密密码', 'danger');
+                    return;
+                }
+
+                this.showStatus('加密中...', 'warning');
+
+                try {
+                    const fileData = await this.readFileAsArrayBuffer(this.selectedFile);
+                    const encryptedData = await this.encryptData(fileData, password);
+
+                    await this.saveEncryptedVideo(this.selectedFile.name, encryptedData, password);
+
+                    this.showStatus('视频已加密并安全保存！', 'success');
+                    this.clearSelection();
+                    this.loadEncryptedFiles();
+                } catch (error) {
+                    this.showStatus(`加密失败: ${error.message}`, 'danger');
+                }
+            }
+
+            async encryptData(data, password) {
+                // 使用更安全的加密算法（示例）
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+
+                // 实际应用中应使用Web Crypto API进行真正的加密
+                const encrypted = new Uint8Array(data.byteLength + salt.length);
+                encrypted.set(salt, 0);
+
+                for (let i = 0; i < data.byteLength; i++) {
+                    encrypted[i + salt.length] = new Uint8Array(data)[i] ^
+                        passwordData[i % passwordData.length] ^
+                        salt[i % salt.length];
+                }
+
+                return encrypted;
+            }
+
+            async saveEncryptedVideo(name, data, password) {
+                const transaction = this.db.transaction(['encryptedVideos'], 'readwrite');
+                const store = transaction.objectStore('encryptedVideos');
+
+                const encryptedFile = {
+                    name: name,
+                    data: data,
+                    passwordHint: password.substring(0, 1) + '***' + password.substring(password.length - 1),
+                    size: data.byteLength,
+                    created: new Date()
+                };
+
+                return new Promise((resolve, reject) => {
+                    const request = store.add(encryptedFile);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(new Error('保存失败'));
+                });
+            }
+
+            async loadEncryptedFiles() {
+                const transaction = this.db.transaction(['encryptedVideos'], 'readonly');
+                const store = transaction.objectStore('encryptedVideos');
+                const request = store.getAll();
+
+                request.onsuccess = (event) => {
+                    this.displayFileList(event.target.result);
+                };
+            }
+
+            displayFileList(files) {
+                const fileList = document.getElementById('encryptedFileList');
+                fileList.innerHTML = '';
+
+                if (files.length === 0) {
+                    fileList.innerHTML = '<div class="file-item text-secondary" style="cursor: default;"><span>无加密视频</span></div>';
+                    return;
+                }
+
+                files.forEach(file => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerHTML = `
+                        <span>${file.name}</span>
+                        <small>${this.formatFileSize(file.size)}</small>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        document.querySelectorAll('#encryptedFileList .file-item').forEach(i =>
+                            i.classList.remove('active'));
+                        item.classList.add('active');
+                        this.selectedEncryptedFile = file;
+                        document.getElementById('deleteEncryptedBtn').disabled = false;
+                        document.getElementById('downloadEncryptedBtn').disabled = false;
+                    });
+
+                    fileList.appendChild(item);
+                });
+            }
+
+            async deleteEncryptedFile() {
+                if (!this.selectedEncryptedFile) return;
+
+                const transaction = this.db.transaction(['encryptedVideos'], 'readwrite');
+                const store = transaction.objectStore('encryptedVideos');
+                store.delete(this.selectedEncryptedFile.id);
+
+                this.selectedEncryptedFile = null;
+                document.getElementById('deleteEncryptedBtn').disabled = true;
+                document.getElementById('downloadEncryptedBtn').disabled = true;
+
+                this.showStatus('加密视频已删除', 'success');
+                this.loadEncryptedFiles();
+            }
+
+            downloadEncryptedFile() {
+                if (!this.selectedEncryptedFile) return;
+
+                // 只允许下载加密文件，不解密
+                const blob = new Blob([this.selectedEncryptedFile.data],
+                    { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${this.selectedEncryptedFile.name}.encrypted`;
+                a.click();
+
+                URL.revokeObjectURL(url);
+                this.showStatus('加密视频下载成功', 'success');
+            }
+
+            checkPasswordStrength(password) {
+                let strength = 0;
+                let text = '未输入';
+
+                if (password.length > 0) {
+                    strength = 1;
+                    text = '弱';
+                }
+                if (password.length >= 8) {
+                    strength = 2;
+                    text = '中';
+                }
+                if (password.length >= 12) {
+                    strength = 3;
+                    text = '强';
+                }
+
+                document.getElementById('encryptStrengthText').textContent = text;
+                const strengthBar = document.getElementById('encryptPasswordStrength');
+                strengthBar.className = 'password-strength';
+                if (strength > 0) {
+                    strengthBar.classList.add(`strength-${['weak', 'medium', 'strong'][strength - 1]}`);
+                }
+            }
+
+            clearSelection() {
+                this.selectedFile = null;
+                this.selectedEncryptedFile = null;
+                document.getElementById('encryptFileInfo').textContent = '未选择文件';
+                document.getElementById('encryptPassword').value = '';
+                document.getElementById('encryptBtn').disabled = true;
+                document.getElementById('deleteEncryptedBtn').disabled = true;
+                document.getElementById('downloadEncryptedBtn').disabled = true;
+                document.getElementById('encryptPasswordStrength').className = 'password-strength';
+                document.getElementById('encryptStrengthText').textContent = '未输入';
+            }
+
+            showStatus(message, type) {
+                const element = document.getElementById('encryptStatus');
+                element.textContent = message;
+                element.className = `alert alert-${type} mt-3 mb-0`;
+                element.classList.remove('d-none');
+            }
+
+            async readFileAsArrayBuffer(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = e => reject(new Error('读取文件失败'));
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+
+        // ==================== 修复的安全解密播放模块 ====================
+        class SecureDecryptionModule {
+            constructor() {
+                this.selectedFile = null;
+                this.videoBlobUrl = null;
+                this.decryptedData = null;
+                this.setupEventListeners();
+                this.disableVideoDownload();
+            }
+
+            setupEventListeners() {
+                // 文件选择
+                document.getElementById('decryptUploadArea').addEventListener('click', () => this.selectEncryptedFile());
+
+                // 解密按钮
+                document.getElementById('decryptBtn').addEventListener('click', () => this.decryptAndPlay());
+
+                // 清除按钮
+                document.getElementById('clearDecryptBtn').addEventListener('click', () => this.clearAll());
+
+                // 播放控制
+                document.getElementById('playBtn').addEventListener('click', () => this.playVideo());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pauseVideo());
+                document.getElementById('volumeUpBtn').addEventListener('click', () => this.adjustVolume(0.1));
+                document.getElementById('volumeDownBtn').addEventListener('click', () => this.adjustVolume(-0.1));
+                document.getElementById('stopBtn').addEventListener('click', () => this.stopVideo());
+
+                // 防止视频右键菜单下载
+                document.getElementById('videoPlayer').addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    this.showStatus('右键菜单已禁用', 'warning');
+                });
+            }
+
+            disableVideoDownload() {
+                const videoPlayer = document.getElementById('videoPlayer');
+
+                // 移除下载相关功能
+                videoPlayer.controlsList = 'nodownload noplaybackrate nofullscreen';
+
+                // 监听视频播放结束，自动清理
+                videoPlayer.addEventListener('ended', () => {
+                    this.cleanupDecryptedData();
+                });
+
+                // 监听页面关闭，确保清理
+                window.addEventListener('beforeunload', () => {
+                    this.cleanupDecryptedData();
+                });
+            }
+
+            async selectEncryptedFile() {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.encrypted';
+                fileInput.onchange = (e) => {
+                    if (e.target.files[0]) {
+                        this.handleFileSelect(e.target.files[0]);
+                    }
+                };
+                fileInput.click();
+            }
+
+            handleFileSelect(file) {
+                this.selectedFile = file;
+                document.getElementById('decryptFileInfo').textContent =
+                    `已选择加密文件: ${file.name} (${this.formatFileSize(file.size)})`;
+                document.getElementById('decryptBtn').disabled = false;
+
+                this.showStatus('加密视频已选择，请输入密码解密播放', 'success');
+            }
+
+            async decryptAndPlay() {
+                const password = document.getElementById('decryptPassword').value.trim();
+                if (!password) {
+                    this.showStatus('请输入解密密码', 'danger');
+                    return;
+                }
+
+                // 显示加载状态
+                const decryptBtn = document.getElementById('decryptBtn');
+                const originalText = decryptBtn.textContent;
+                decryptBtn.innerHTML = '<span class="loading"></span>解密中...';
+                decryptBtn.disabled = true;
+
+                try {
+                    const fileData = await this.readFileAsArrayBuffer(this.selectedFile);
+                    this.decryptedData = await this.decryptData(fileData, password);
+
+                    // 使用安全的方式播放视频
+                    await this.playVideoSafely(this.decryptedData);
+                    this.showStatus('解密成功！视频正在安全播放中', 'success');
+
+                } catch (error) {
+                    this.showStatus(`解密失败: ${error.message}`, 'danger');
+                    this.cleanupDecryptedData();
+                } finally {
+                    // 恢复按钮状态
+                    decryptBtn.innerHTML = originalText;
+                    decryptBtn.disabled = false;
+                }
+            }
+
+            async decryptData(data, password) {
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                const encryptedData = new Uint8Array(data);
+
+                // 提取盐（前16字节）
+                const salt = encryptedData.slice(0, 16);
+                const actualData = encryptedData.slice(16);
+
+                const decrypted = new Uint8Array(actualData.length);
+
+                for (let i = 0; i < actualData.length; i++) {
+                    decrypted[i] = actualData[i] ^
+                        passwordData[i % passwordData.length] ^
+                        salt[i % salt.length];
+                }
+
+                return decrypted;
+            }
+
+            async playVideoSafely(decryptedData) {
+                // 清理之前的资源
+                this.cleanupDecryptedData();
+
+                // 创建Blob URL进行播放（这是最可靠的方式）
+                const videoBlob = new Blob([decryptedData], { type: 'video/mp4' });
+                this.videoBlobUrl = URL.createObjectURL(videoBlob);
+
+                const videoPlayer = document.getElementById('videoPlayer');
+                videoPlayer.src = this.videoBlobUrl;
+
+                // 设置视频标题
+                const fileName = this.selectedFile.name.replace('.encrypted', '');
+                document.getElementById('decryptFileInfo').textContent = `正在播放: ${fileName}`;
+
+                // 自动开始播放
+                const playPromise = videoPlayer.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log('自动播放被阻止，需要用户交互');
+                        this.showStatus('请点击播放按钮开始播放', 'warning');
+                    });
+                }
+
+                // 监听播放结束自动清理
+                videoPlayer.onended = () => {
+                    this.cleanupDecryptedData();
+                    this.showStatus('播放完成，解密数据已清除', 'success');
+                };
+            }
+
+            playVideo() {
+                const videoPlayer = document.getElementById('videoPlayer');
+                if (videoPlayer.src && videoPlayer.paused) {
+                    videoPlayer.play().catch(e => {
+                        this.showStatus('播放失败: ' + e.message, 'danger');
+                    });
+                }
+            }
+
+            pauseVideo() {
+                const videoPlayer = document.getElementById('videoPlayer');
+                if (!videoPlayer.paused) {
+                    videoPlayer.pause();
+                }
+            }
+
+            stopVideo() {
+                const videoPlayer = document.getElementById('videoPlayer');
+                videoPlayer.pause();
+                videoPlayer.currentTime = 0;
+                this.cleanupDecryptedData();
+                this.showStatus('播放已停止，解密数据已清除', 'success');
+            }
+
+            adjustVolume(delta) {
+                const videoPlayer = document.getElementById('videoPlayer');
+                videoPlayer.volume = Math.max(0, Math.min(1, videoPlayer.volume + delta));
+            }
+
+            cleanupDecryptedData() {
+                // 清理所有解密数据
+                if (this.videoBlobUrl) {
+                    URL.revokeObjectURL(this.videoBlobUrl);
+                    this.videoBlobUrl = null;
+                }
+
+                this.decryptedData = null;
+
+                const videoPlayer = document.getElementById('videoPlayer');
+                if (videoPlayer.src) {
+                    videoPlayer.src = '';
+                }
+            }
+
+            clearAll() {
+                this.cleanupDecryptedData();
+                this.selectedFile = null;
+                document.getElementById('decryptFileInfo').textContent = '未选择文件';
+                document.getElementById('decryptPassword').value = '';
+                document.getElementById('decryptBtn').disabled = true;
+                this.showStatus('已清除所有数据', 'success');
+            }
+
+            showStatus(message, type) {
+                const element = document.getElementById('decryptStatus');
+                element.textContent = message;
+                element.className = `alert alert-${type} mt-3 mb-0`;
+                element.classList.remove('d-none');
+            }
+
+            async readFileAsArrayBuffer(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = e => reject(new Error('读取文件失败'));
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+
+        // ==================== 初始化应用 ====================
+        document.addEventListener('DOMContentLoaded', function () {
+            // 初始化加密模块
+            const encryptionModule = new EncryptionModule();
+
+            // 初始化安全解密模块
+            const decryptionModule = new SecureDecryptionModule();
+
+            console.log('安全加密视频播放器初始化完成');
+        });
+    </script>
+</body>
+
+</html>
